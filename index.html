@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>PeerJS Mobile Video Call</title>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- PeerJS -->
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
+  <!-- Eruda -->
+  <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+  <script>
+    eruda.init();
+  </script>
+</head>
+
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center">
+
+  <div class="w-full max-w-sm p-4 space-y-4">
+
+    <!-- Header -->
+    <div class="text-center">
+      <h1 class="text-2xl font-bold">📹 Video Call</h1>
+      <p class="text-gray-400 text-sm">PeerJS · Mobile</p>
+    </div>
+
+    <!-- My ID Card -->
+    <div class="bg-gray-800 rounded-xl p-4 shadow">
+      <p class="text-sm text-gray-400 mb-1">Your Peer ID</p>
+      <div class="flex items-center justify-between bg-gray-900 rounded-lg px-3 py-2">
+        <span id="myId" class="text-green-400 text-sm break-all">Connecting...</span>
+        <button onclick="copyId()" class="text-xs bg-green-600 px-2 py-1 rounded">
+          Copy
+        </button>
+      </div>
+    </div>
+
+    <!-- Call Section -->
+    <div class="bg-gray-800 rounded-xl p-4 shadow space-y-3">
+      <input
+        id="peerIdInput"
+        placeholder="Enter peer ID"
+        class="w-full p-2 rounded bg-gray-900 text-white text-sm outline-none"
+      />
+      <button
+        onclick="callPeer()"
+        class="w-full bg-blue-600 py-2 rounded font-semibold"
+      >
+        Call
+      </button>
+      <p id="status" class="text-center text-xs text-gray-400"></p>
+    </div>
+
+    <!-- Videos -->
+    <div class="grid grid-cols-2 gap-2">
+      <video id="localVideo" autoplay muted playsinline
+        class="rounded-xl bg-black w-full h-40 object-cover"></video>
+      <video id="remoteVideo" autoplay playsinline
+        class="rounded-xl bg-black w-full h-40 object-cover"></video>
+    </div>
+
+  </div>
+
+  <!-- App Script -->
+  <script>
+    const localVideo = document.getElementById("localVideo");
+    const remoteVideo = document.getElementById("remoteVideo");
+    const myIdSpan = document.getElementById("myId");
+    const peerIdInput = document.getElementById("peerIdInput");
+    const statusText = document.getElementById("status");
+
+    let localStream;
+
+    const peer = new Peer();
+
+    // Get camera & mic
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      .then(stream => {
+        localStream = stream;
+        localVideo.srcObject = stream;
+        statusText.innerText = "Camera & mic ready";
+      })
+      .catch(err => {
+        statusText.innerText = "Camera permission denied";
+        console.error(err);
+      });
+
+    // Peer ready
+    peer.on("open", id => {
+      myIdSpan.innerText = id;
+      console.log("My ID:", id);
+    });
+
+    // Incoming call
+    peer.on("call", call => {
+      statusText.innerText = "Incoming call...";
+      call.answer(localStream);
+
+      call.on("stream", remoteStream => {
+        remoteVideo.srcObject = remoteStream;
+        statusText.innerText = "Connected";
+      });
+    });
+
+    // Outgoing call
+    function callPeer() {
+      const peerId = peerIdInput.value.trim();
+      if (!peerId) {
+        alert("Enter peer ID");
+        return;
+      }
+
+      statusText.innerText = "Calling...";
+      const call = peer.call(peerId, localStream);
+
+      call.on("stream", remoteStream => {
+        remoteVideo.srcObject = remoteStream;
+        statusText.innerText = "Connected";
+      });
+    }
+
+    function copyId() {
+      navigator.clipboard.writeText(myIdSpan.innerText);
+      statusText.innerText = "Peer ID copied!";
+    }
+  </script>
+
+</body>
+</html>
