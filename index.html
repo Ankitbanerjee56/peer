@@ -2,9 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1"
+  />
   <title>PeerJS Mobile Video Call</title>
 
-  <!-- Tailwind CDN -->
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
 
   <!-- PeerJS -->
@@ -12,42 +16,45 @@
 
   <!-- Eruda -->
   <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-  <script>
-    eruda.init();
-  </script>
+  <script>eruda.init();</script>
 </head>
 
-<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center">
+<body class="bg-gray-900 text-white min-h-screen">
 
-  <div class="w-full max-w-sm p-4 space-y-4">
+  <div class="min-h-screen flex flex-col p-3 max-w-md mx-auto">
 
     <!-- Header -->
-    <div class="text-center">
-      <h1 class="text-2xl font-bold">📹 Video Call</h1>
-      <p class="text-gray-400 text-sm">PeerJS · Mobile</p>
+    <div class="text-center mb-3">
+      <h1 class="text-xl font-bold">📹 Video Call</h1>
+      <p class="text-gray-400 text-xs">PeerJS · Mobile</p>
     </div>
 
-    <!-- My ID Card -->
-    <div class="bg-gray-800 rounded-xl p-4 shadow">
-      <p class="text-sm text-gray-400 mb-1">Your Peer ID</p>
-      <div class="flex items-center justify-between bg-gray-900 rounded-lg px-3 py-2">
-        <span id="myId" class="text-green-400 text-sm break-all">Connecting...</span>
-        <button onclick="copyId()" class="text-xs bg-green-600 px-2 py-1 rounded">
+    <!-- My ID -->
+    <div class="bg-gray-800 rounded-xl p-3 mb-3">
+      <p class="text-xs text-gray-400 mb-1">Your Peer ID</p>
+      <div class="flex gap-2 items-center bg-gray-900 rounded-lg p-2">
+        <span id="myId" class="text-green-400 text-xs break-all flex-1">
+          Connecting...
+        </span>
+        <button
+          onclick="copyId()"
+          class="bg-green-600 text-xs px-3 py-2 rounded active:scale-95"
+        >
           Copy
         </button>
       </div>
     </div>
 
-    <!-- Call Section -->
-    <div class="bg-gray-800 rounded-xl p-4 shadow space-y-3">
+    <!-- Call Controls -->
+    <div class="bg-gray-800 rounded-xl p-3 mb-3 space-y-2">
       <input
         id="peerIdInput"
         placeholder="Enter peer ID"
-        class="w-full p-2 rounded bg-gray-900 text-white text-sm outline-none"
+        class="w-full p-3 rounded bg-gray-900 text-sm outline-none"
       />
       <button
         onclick="callPeer()"
-        class="w-full bg-blue-600 py-2 rounded font-semibold"
+        class="w-full bg-blue-600 py-3 rounded font-semibold active:scale-95"
       >
         Call
       </button>
@@ -55,11 +62,21 @@
     </div>
 
     <!-- Videos -->
-    <div class="grid grid-cols-2 gap-2">
-      <video id="localVideo" autoplay muted playsinline
-        class="rounded-xl bg-black w-full h-40 object-cover"></video>
-      <video id="remoteVideo" autoplay playsinline
-        class="rounded-xl bg-black w-full h-40 object-cover"></video>
+    <div class="flex-1 flex flex-col gap-2 sm:grid sm:grid-cols-2">
+      <video
+        id="localVideo"
+        autoplay
+        muted
+        playsinline
+        class="w-full h-48 sm:h-56 rounded-xl bg-black object-cover"
+      ></video>
+
+      <video
+        id="remoteVideo"
+        autoplay
+        playsinline
+        class="w-full h-48 sm:h-56 rounded-xl bg-black object-cover"
+      ></video>
     </div>
 
   </div>
@@ -76,25 +93,21 @@
 
     const peer = new Peer();
 
-    // Get camera & mic
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-      .then(stream => {
-        localStream = stream;
-        localVideo.srcObject = stream;
-        statusText.innerText = "Camera & mic ready";
-      })
-      .catch(err => {
-        statusText.innerText = "Camera permission denied";
-        console.error(err);
-      });
-
-    // Peer ready
-    peer.on("open", id => {
-      myIdSpan.innerText = id;
-      console.log("My ID:", id);
+    navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "user" },
+      audio: true
+    }).then(stream => {
+      localStream = stream;
+      localVideo.srcObject = stream;
+      statusText.innerText = "Camera & mic ready";
+    }).catch(() => {
+      statusText.innerText = "Camera permission denied";
     });
 
-    // Incoming call
+    peer.on("open", id => {
+      myIdSpan.innerText = id;
+    });
+
     peer.on("call", call => {
       statusText.innerText = "Incoming call...";
       call.answer(localStream);
@@ -105,13 +118,9 @@
       });
     });
 
-    // Outgoing call
     function callPeer() {
       const peerId = peerIdInput.value.trim();
-      if (!peerId) {
-        alert("Enter peer ID");
-        return;
-      }
+      if (!peerId) return alert("Enter peer ID");
 
       statusText.innerText = "Calling...";
       const call = peer.call(peerId, localStream);
